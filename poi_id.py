@@ -3,6 +3,7 @@
 import sys
 import pickle
 from time import time
+from collections import OrderedDict
 sys.path.append("../tools/")
 
 from feature_format import featureFormat, targetFeatureSplit
@@ -19,14 +20,32 @@ from sklearn.naive_bayes import GaussianNB
 
 
 def get_Features(features, labels):
-    kbest = SelectKBest(k=10)
+    kbest = SelectKBest(k = 'all')
     selected_features = kbest.fit_transform(features, labels)
+
     features_selected=[features_list_selection[i+1] for i in kbest.get_support(indices=True)]
-    print "Features Selected Scores:"
-    print kbest.scores_
-    print "Features Selected Names:"
-    print features_selected
-    return features_selected
+
+    score_names = {}
+    j = 0
+    for i in features_selected:
+        score_names[i] = kbest.scores_[j]
+        j += 1
+
+    name_scores = sorted(score_names.items(), key=lambda x: x[1], reverse=True)
+
+    j = 1
+    print "**** Features Scores ****"
+    for n in name_scores:
+        print "Feature %d:" % j, n
+        j += 1
+
+    list_features = []
+    for n in name_scores:
+        if n[1] >= 1:
+            list_features.append(n[0])
+
+    print "Features Selected: ", list_features
+    return list_features
 
 
 def featureScaling(features):
@@ -47,19 +66,11 @@ def getAccuracy(pred, labels_test):
     acc = accuracy_score(pred, labels_test)
     return acc
 
-### features_list is a list of strings, each of which is a feature name.
-### The first feature must be "poi".
-features_list_selection = ['poi','salary','to_messages','deferral_payments', 'total_payments',
-                           'exercised_stock_options', 'bonus', 'restricted_stock',
-                           'shared_receipt_with_poi', 'restricted_stock_deferred', 'total_stock_value',
-                           'expenses', 'loan_advances', 'from_messages', 'other',
-                           'from_this_person_to_poi', 'director_fees', 'deferred_income',
-                           'long_term_incentive', 'from_poi_to_this_person']# You will need to use more features
-
 
 ### Load the dictionary containing the dataset
 with open("final_project_dataset.pkl", "r") as data_file:
     data_dict = pickle.load(data_file)
+
 
 ### Task 3: Create new feature(s)
 
@@ -72,6 +83,14 @@ for employee in data_dict:
         data_dict[employee]['from_poi'] = 0
 
 
+### features_list is a list of strings, each of which is a feature name.
+### The first feature must be "poi".
+features_list_selection = ['poi','salary','to_messages','deferral_payments', 'total_payments',
+                           'exercised_stock_options', 'bonus', 'restricted_stock',
+                           'shared_receipt_with_poi', 'restricted_stock_deferred', 'total_stock_value',
+                           'expenses', 'loan_advances', 'from_messages', 'other',
+                           'from_this_person_to_poi', 'director_fees', 'deferred_income',
+                           'long_term_incentive', 'from_poi_to_this_person', 'from_poi']# You will need to use more features
 
 
 ### Store to my_dataset for easy export below.
@@ -81,7 +100,45 @@ my_dataset_selection = data_dict
 data_selection = featureFormat(my_dataset_selection, features_list_selection, sort_keys = True)
 labels_selection, features_selection = targetFeatureSplit(data_selection)
 
+
+### Dataset Description
+print "**** Dataset Description ****"
+print "Total number of data points: ", len(data_dict)
+print "Number of features: 20 features"
+print "*** labels_selection: ", len(labels_selection)
+
+## Allocation classes
+
+class_0 = 0
+class_1 = 0
+for n in labels_selection:
+    if n == 0:
+        class_0 = class_0 + 1
+    else:
+        class_1 = class_1 + 1
+
+print "allocation across classes"
+print "Number of POI: ", class_1
+print "Number of no POI: ", class_0
+
+## Identify NaN values.
+
+nan_features = {}
+
+print "Identify NaN values"
+for key, value in data_dict.iteritems():
+    for key_val, val_val in value.iteritems():
+        if val_val == 'NaN':
+            if key_val in nan_features.keys():
+                nan_features[key_val] = nan_features[key_val] + 1
+            else:
+                nan_features[key_val] = 1
+
+print "NaN Features: ", nan_features
+
+
 ### Task 1: Select what features you'll use.
+
 
 features_selected = get_Features(features_selection, labels_selection)
 
@@ -142,7 +199,7 @@ clf_dt = DecisionTreeClassifier(min_samples_split=40)
 
 #### DecisionTree with Pipeline
 # create a pipeline with scaling and dimension reduction
-pipeline_tree = Pipeline([('selection', SelectKBest(k=10)),
+pipeline_tree = Pipeline([('selection', SelectKBest(k=5)),
                           ('scaler', MinMaxScaler()),
                           ('pca', PCA(n_components=2)),
                           ('clf_tree', DecisionTreeClassifier(min_samples_split=40)),
@@ -318,4 +375,4 @@ print "Accuracy", acc_svmpca_def
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-dump_classifier_and_data(clf_svmpca_def, my_dataset, features_list)
+dump_classifier_and_data(clf_svmpca_def.best_estimator_, my_dataset, features_list)
