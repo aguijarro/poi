@@ -17,6 +17,10 @@ from sklearn.preprocessing import MinMaxScaler
 from sklearn.decomposition import PCA
 
 from sklearn.naive_bayes import GaussianNB
+from sklearn.svm import SVC
+from sklearn.cross_validation import StratifiedShuffleSplit, KFold
+from sklearn.grid_search import GridSearchCV
+from sklearn.tree import DecisionTreeClassifier
 
 
 def get_Features(features, labels):
@@ -148,8 +152,10 @@ features_list = ['poi'] + features_selected
 
 ### Task 2: Remove outliers
 
-key = 'TOTAL'
-data_dict.pop(key, 0)
+
+data_dict.pop('TOTAL', 0)
+data_dict.pop('THE TRAVEL AGENCY IN THE PARK', 0)
+
 
 ### Task 3: Create new feature(s)
 
@@ -159,7 +165,6 @@ my_dataset = data_dict
 ### Extract features and labels from dataset for local testing
 data = featureFormat(my_dataset, features_list, sort_keys = True)
 labels, features = targetFeatureSplit(data)
-
 
 ### Scaling features
 features = featureScaling(features)
@@ -176,79 +181,97 @@ pca = dimension_reduction(features)
 
 # Provided to give you a starting point. Try a variety of classifiers.
 
-#### Naive Bayes Classifier
-# import the sklearn module for GaussianNB
-from sklearn.naive_bayes import GaussianNB
-# create classifier
+#### Naive Bayes Classifier - clf_nb
+print "**** Creating Naive Bayes Classifier - clf_nb ****"
 clf_nb = GaussianNB()
 
-#### Naive Bayes Classifier with pipeline
-# create a pipeline with scaling and dimension reduction
-pipeline_nb = Pipeline([('scaler', MinMaxScaler()),
-                        ('pca', PCA(n_components=2)),
-                        ('clf_nbp', GaussianNB()),
-                        ])
+#### Naive Bayes Classifier Pipeline - clf_nbp
+print "**** Creating Naive Bayes Classifier Pipeline - clf_nbp ****"
+clf_nbp = GaussianNB()
+scaler_nbp = MinMaxScaler()
+pca_nbp = PCA()
+pipeline_nbp = Pipeline([('scaler_nbp', scaler_nbp ),
+                        ('pca_nbp', pca_nbp),
+                        ('clf_nbp', clf_nbp),
+                         ])
+parameters_nbp = {
+    'pca_nbp__n_components': [2],
+}
+gs_nbp = GridSearchCV(pipeline_nbp, param_grid=parameters_nbp, scoring='f1')
 
-#### DecisionTree Classifier
-from sklearn.grid_search import GridSearchCV
-# import the sklearn module for tree
-from sklearn.tree import DecisionTreeClassifier
-# create classifier
+
+#### DecisionTree Classifier - clf_dt
+print "**** Creating DecisionTree Classifier - clf_dt ****"
 clf_dt = DecisionTreeClassifier(min_samples_split=40)
 
+#### DecisionTree Classifier - clf_tree
+print "**** Creating DecisionTree Classifier - clf_tree ****"
 
-#### DecisionTree with Pipeline
-# create a pipeline with scaling and dimension reduction
-pipeline_tree = Pipeline([('selection', SelectKBest(k=5)),
-                          ('scaler', MinMaxScaler()),
-                          ('pca', PCA(n_components=2)),
-                          ('clf_tree', DecisionTreeClassifier(min_samples_split=40)),
+clf_tree = DecisionTreeClassifier()
+selection_tree = SelectKBest()
+scaler_tree = MinMaxScaler()
+pca_tree = PCA()
+
+pipeline_tree = Pipeline([('selection_tree', selection_tree),
+                          ('scaler_tree', scaler_tree),
+                          ('pca_tree', pca_tree),
+                          ('clf_tree', clf_tree),
                           ])
 
-#### DecisionTree with Pipeline and GridSearchCV
-# create a pipeline with scaling and dimension reduction
-pipeline_tree_1 = Pipeline([('scaler_tr1', MinMaxScaler()),
-                          ('pca_tr1', PCA()),
-                          ('clf_tree_tr1', DecisionTreeClassifier()),
-                          ])
-
-parameters_tree_1 = {
-    'pca_tr1__n_components': [2],
-    'clf_tree_tr1__min_samples_split': [40],
+parameters_tree = {
+    'selection_tree__k': [5],
+    'pca_tree__n_components': [2],
+    'clf_tree__min_samples_split': [40],
 }
-clf_tree_gs = GridSearchCV(pipeline_tree_1, parameters_tree_1, verbose = 1, scoring = "roc_auc")
 
+clf_tree_gs = GridSearchCV(pipeline_tree, parameters_tree, verbose=1, scoring="f1")
 
-#### SVM with dimension reduction
-# import the sklearn module for SVC
-
-from sklearn.svm import SVC
+#### SVM Classifier - clf_svm
+print "**** Creating SVM Classifier - clf_svm ****"
 param_grid = {
               'C': [1e3, 5e3, 1e4, 5e4, 1e5],
               'gamma': [0.0001, 0.0005, 0.001, 0.005, 0.01, 0.1],
               }
-# for sklearn version 0.16 or prior, the class_weight parameter value is 'auto'
-clf_svmpca = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
+clf_svm = GridSearchCV(SVC(kernel='rbf', class_weight='balanced'), param_grid)
 
 
-
-param_grid_def = {
-                  'C': [50000.0],
-                  'gamma': [0.01],
-                  'cache_size' : [200],
-                  'class_weight' : ['balanced'],
-                  'coef0' : [0.0],
-                  'decision_function_shape' : [None],
-                  'degree':[3],
-                  'kernel':['rbf'],
-                  'max_iter':[-1],
-                  'probability':[False],
-                  'random_state':[None],
-                  'shrinking':[True],
-                  'tol':[0.001],
-                  'verbose':[False]
+#### SVM Classifier - clf_svc_t
+print "**** Creating SVM Classifier - clf_svc_t ****"
+clf_svc_t = SVC()
+kbest_svc_t = SelectKBest()
+scaler_svc_t = MinMaxScaler()
+pipe_svc_t = Pipeline([('kbest_svc_t', kbest_svc_t),
+                      ('scaler_svc_t', scaler_svc_t),
+                      ('clf_svc_t', clf_svc_t)
+                      ])
+param_grid_def = {'kbest_svc_t__k': [5],
+                  'clf_svc_t__C': [1000.0],
+                  'clf_svc_t__gamma': [0.001],
+                  'clf_svc_t__cache_size' : [200],
+                  'clf_svc_t__class_weight' : ['balanced'],
+                  'clf_svc_t__coef0' : [0.0],
+                  'clf_svc_t__decision_function_shape' : [None],
+                  'clf_svc_t__degree':[3],
+                  'clf_svc_t__kernel':['rbf'],
+                  'clf_svc_t__max_iter':[-1],
+                  'clf_svc_t__probability':[False],
+                  'clf_svc_t__random_state':[None],
+                  'clf_svc_t__shrinking':[True],
+                  'clf_svc_t__tol':[0.001],
+                  'clf_svc_t__verbose':[False]
                   }
-clf_svmpca_def = GridSearchCV(SVC(), param_grid)
+
+
+#### Naive Bayes Classifier - Tunning - clf_gnb8
+print "**** Creating Naive Bayes Classifier - Tunning - clf_gnb8 ****"
+clf_gnb8 = GaussianNB()
+kbest_gnb8 = SelectKBest()
+scaler_gnb8 = MinMaxScaler()
+pipe_gnb8 = Pipeline([('kbest_gnb8', kbest_gnb8),
+                      ('scaler_gnb8', scaler_gnb8),
+                      ('clf_gnb8', clf_gnb8)
+                      ])
+parameters = {'kbest_gnb8__k': [5]}
 
 
 ### Task 5: Tune your classifier to achieve better than .3 precision and recall
@@ -263,111 +286,50 @@ from sklearn.cross_validation import train_test_split
 features_train, features_test, labels_train, labels_test = \
     train_test_split(features, labels, test_size=0.3, random_state=42)
 
-#### Naive Bayes Classifier Fitting
-print "***** Naive Bayes Classifier Fitting *****"
-
-t0_nb = 0
+#### Naive Bayes Classifier Fitting - clf_nb
+print "***** Fitting Naive Bayes Classifier Fitting - clf_nb *****"
 clf_nb.fit(features_train, labels_train)
-print "training time:", round(time() - t0_nb, 3), "s"
-t1_nb = time()
-pred_nb = clf_nb.predict(features_test)
-print "predicting time clf_nb:", round(time() - t1_nb, 3), "s"
-acc_nb= getAccuracy(pred_nb, labels_test)
-print "Accuracy clf_nb", acc_nb
 
+#### Naive Bayes Classifier Fitting Pipeline - clf_nbp
+print "***** Fitting Naive Bayes Classifier Fitting Pipeline - clf_nbp *****"
+gs_nbp.fit(features_train, labels_train)
+clf_gs_nbp_be = gs_nbp.best_estimator_
 
-#### Naive Bayes Classifier with pipeline fitting
-print "***** Naive Bayes Classifier with pipeline fitting *****"
-pipeline_nb.fit(features_train,labels_train)
-pipeline_nb_pred = pipeline_nb.predict(features_test)
-pipelin_nb_acc = getAccuracy(pipeline_nb_pred, labels_test)
-print "Accuracy clf_nb", pipelin_nb_acc
-print classification_report(labels_test, pipeline_nb_pred)
-print confusion_matrix(labels_test, pipeline_nb_pred)
-
-
-#### DecisionTree
-print "***** DecisionTree fitting *****"
-t0_dt = time()
+#### DecisionTree Classifier Fitting - clf_dt
+print "***** Fitting DecisionTree Classifier Fitting - clf_dt *****"
 clf_dt.fit(features_train, labels_train)
-print "training time:", round(time() - t0_dt, 3), "s"
-t1_dt = time()
-pred_dt = clf_dt.predict(features_test)
-print "predicting time:", round(time() - t1_dt, 3), "s"
-acc_dt = getAccuracy(pred_dt, labels_test)
-print "Accuracy_dt", acc_dt
 
-#### DecisionTree Classifier with pipeline fitting
-
-print "***** DecisionTree Classifier with pipeline fitting *****"
-
-pipeline_tree.fit(features_train,labels_train)
-pipeline_tree_pred = pipeline_tree.predict(features_test)
-pipelin_tree_acc = getAccuracy(pipeline_tree_pred, labels_test)
-print "Accuracy clf_tree", pipelin_tree_acc
-print classification_report(labels_test, pipeline_tree_pred)
-print confusion_matrix(labels_test, pipeline_tree_pred)
-
-
-#### DecisionTree Classifier with GridSearchCV
-print "***** DecisionTree Classifier with GridSearchCV *****"
-print("\nPerforming grid search...")
-print("pipeline:", [name for name, _ in pipeline_tree_1.steps])
-print("parameters:")
-print(parameters_tree_1)
-print "Fitting the classifier to the training set"
-t0_tree_gs = time()
+#### DecisionTree Classifier Fitting - clf_tree
+print "***** Fitting DecisionTree Classifier - clf_tree *****"
 clf_tree_gs.fit(features_train, labels_train)
-print "done in %0.3fs" % (time() - t0_tree_gs)
-print "Best estimator found by grid search:"
-print clf_tree_gs.best_estimator_
-
-t1_tree_gs = time()
-pred_tree_gs = clf_tree_gs.predict(features_test)
-print "done in %0.3fs" % (time() - t1_tree_gs)
-print classification_report(labels_test, pred_tree_gs)
-print confusion_matrix(labels_test, pred_tree_gs)
-acc_tree_gs = getAccuracy(pred_tree_gs, labels_test)
-print "Accuracy", acc_tree_gs
+clf_tree_be = clf_tree_gs.best_estimator_
 
 
-#### SVM with GridSearchCV
-# Train a SVM classification model
-print "***** SVM with GridSearchCV *****"
-print "Fitting the classifier to the training set"
-t0_svmpca = time()
-clf_svmpca.fit(features_train, labels_train)
-print "done in %0.3fs" % (time() - t0_svmpca)
-print "Best estimator found by grid search:"
-print clf_svmpca.best_estimator_
-# Quantitative evaluation of the model quality on the test set
-print "Predicting the people names on the testing set"
-t1_svmpca = time()
-pred_svmpca = clf_svmpca.predict(features_test)
-print "done in %0.3fs" % (time() - t1_svmpca)
-print classification_report(labels_test, pred_svmpca)
-print confusion_matrix(labels_test, pred_svmpca)
-acc_svmpca = getAccuracy(pred_svmpca, labels_test)
-print "Accuracy", acc_svmpca
+#### SVM Classifier Fitting - clf_svm
+print "***** Fitting SVM Classifier Fitting - clf_svm *****"
+clf_svm.fit(features_train, labels_train)
+clf_svm_be = clf_svm.best_estimator_
+print "Best Estimators SVM Classifier"
+print clf_svm_be
 
 
-#### SVM with GridSearchCV Tunning
-# Train a SVM classification model
-print "***** SVM with GridSearchCV Tunning*****"
-print "Fitting the classifier to the training set"
-t0_svmpca_def = time()
-clf_svmpca_def.fit(features_train, labels_train)
-print "done in %0.3fs" % (time() - t0_svmpca_def)
+#### SVM Classifier Fitting - clf_svc_t
 
-# Quantitative evaluation of the model quality on the test set
-print "Predicting the people names on the testing set"
-t1_svmpca_def = time()
-pred_svmpca_def = clf_svmpca_def.predict(features_test)
-print "done in %0.3fs" % (time() - t1_svmpca_def)
-print classification_report(labels_test, pred_svmpca_def)
-print confusion_matrix(labels_test, pred_svmpca_def)
-acc_svmpca_def = getAccuracy(pred_svmpca_def, labels_test)
-print "Accuracy", acc_svmpca_def
+print "***** Fitting SVM with GridSearchCV Tunning *****"
+sk_fold_svc_t = StratifiedShuffleSplit(labels_train, 100, random_state=42)
+gs_svc_t = GridSearchCV(pipe_svc_t, param_grid=param_grid_def, cv=sk_fold_svc_t, scoring='f1')
+gs_svc_t.fit(features, labels)
+clf_svc_t_be = gs_svc_t.best_estimator_
+
+#### Naive Bayes Classifier Fitting - Tunning - clf_gnb8
+print "***** Fitting GaussianNB Tunning *****"
+sk_fold_gnb8 = StratifiedShuffleSplit(labels, 1000, random_state=42)
+gs_gnb8 = GridSearchCV(pipe_gnb8, param_grid=parameters, cv=sk_fold_gnb8, scoring='f1')
+gs_gnb8.fit(features, labels)
+clf_gnb8_be = gs_gnb8.best_estimator_
+
+print "Best Estimator Fitting SVM with GridSearchCV Tunning"
+print clf_gnb8_be
 
 
 ### Task 6: Dump your classifier, dataset, and features_list so anyone can
@@ -375,4 +337,11 @@ print "Accuracy", acc_svmpca_def
 ### that the version of poi_id.py that you submit can be run on its own and
 ### generates the necessary .pkl files for validating your results.
 
-dump_classifier_and_data(clf_svmpca_def.best_estimator_, my_dataset, features_list)
+#dump_classifier_and_data(clf_nb, my_dataset, features_list_selection)
+#dump_classifier_and_data(clf_gs_nbp_be, my_dataset, features_list_selection)
+#dump_classifier_and_data(clf_dt, my_dataset, features_list_selection)
+#dump_classifier_and_data(clf_tree_be, my_dataset, features_list_selection)
+#dump_classifier_and_data(clf_svm_be, my_dataset, features_list_selection)
+#dump_classifier_and_data(clf_svc_t_be, my_dataset, features_list_selection)
+dump_classifier_and_data(clf_gnb8_be, my_dataset, features_list_selection)
+

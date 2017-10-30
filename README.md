@@ -1,6 +1,6 @@
 # poi
-Final Project - Machine Learning
 
+Starter project code for students taking Udacity ud120
 
 ###### Questions1: Summarize for us the goal of this project and how machine learning is useful in trying to accomplish it. As part of your answer, give some background on the dataset and how it can be used to answer the project question. Were there any outliers in the data when you got it, and how did you handle those?  [relevant rubric items: “data exploration”, “outlier investigation”]
 
@@ -65,23 +65,87 @@ Also, I applied scaling in two ways. One of them at the begining of the process.
 
 ###### Question 3: What algorithm did you end up using? What other one(s) did you try? How did model performance differ between algorithms?  [relevant rubric item: “pick an algorithm”]
 
-The final algorithm I chose is SVM with GridSearchCV because it give me the best precision and recall compare with other algorithms like: Decision Tree and Naive Bayes. Even thought most of the algorithms give me a value in recall equal to 86, just SVM with GridSearchCV give me a better precision value(90).
+The final algorithm I chose was Naive Bayes with feature selection (SelectKBest) and feature scaling (MinMaxScaler) because it give me the best precision (0.41964) and recall (0.35900) compare with other algorithms like: Decision Tree, Support Vector Machine and Naive Bayes.
+
+In the following lines you can observe the different results obtained from the other algorithms:
+
+# Naive Bayes Classifier Fitting - Tunning - clf_gnb8
+
+    Accuracy: 0.84833   Precision: 0.41964  Recall: 0.35900 F1: 0.38696 F2: 0.36968
+    Total predictions: 15000    True positives:  718    False positives:  993   False negatives: 1282   True negatives: 12007
+
+# SVM Classifier Fitting - clf_svc_t
+
+    Accuracy: 0.71867   Precision: 0.24459  Recall: 0.53150 F1: 0.33501 F2: 0.43050
+    Total predictions: 15000    True positives: 1063    False positives: 3283   False negatives:  937   True negatives: 9717
+
+# SVM Classifier Fitting - clf_svm
+
+    Error executing tester.py
+
+# DecisionTree Classifier Fitting - clf_tree
+
+    Accuracy: 0.83527   Precision: 0.25945  Recall: 0.12700 F1: 0.17053 F2: 0.14144
+    Total predictions: 15000    True positives:  254    False positives:  725   False negatives: 1746   True negatives: 12275
+
+# Naive Bayes Classifier Fitting Pipeline - clf_nbp
+
+    Accuracy: 0.83600   Precision: 0.35535  Recall: 0.28250 F1: 0.31476 F2: 0.29458
+    Total predictions: 15000    True positives:  565    False positives: 1025   False negatives: 1435   True negatives: 11975
+
 
 ###### Question 4: What does it mean to tune the parameters of an algorithm, and what can happen if you don’t do this well?  How did you tune the parameters of your particular algorithm? What parameters did you tune? (Some algorithms do not have parameters that you need to tune -- if this is the case for the one you picked, identify and briefly explain how you would have done it for the model that was not your final choice or a different model that does utilize parameter tuning, e.g. a decision tree classifier).  [relevant rubric items: “discuss parameter tuning”, “tune the algorithm”]
 
 Tunning the parameters of an algorithm means to found the best values for parameters to get the best perfomance of the algorithm. If you do not do this you probably have a model with low performance for both training and testing data and the data could not be classify appropriately.
+
 As a result, the cause of poor performance in machine learning is either overfitting or underfitting the data. 
 
 "Overfitting refers to a model that models the training data too well. It learns the detail and noise in the training data to the extent that it negatively impacts the performance of the model on new data. The problem is that these concepts do not apply to new data and negatively impact the models ability to generalize." Underfitting refers to a model that can neither model the training data nor generalize to new data. ("Overfitting and Underfitting With Machine Learning Algorithms",  Jason Brownlee on March 21, 2016 in Machine Learning Algorithms)
 
-In my case, I tune my parameters getting from the svm algorithms the best_estimator_ attribute, and then applying those in the new model.
+In my case, I tuned my parameters getting from the svm algorithms the best_estimator_ attribute, and then applying those in the new model. The parameters were tuned are: 
+
+    C=1000.0
+    cache_size=200
+    class_weight='balanced'
+    coef0=0.0,
+    decision_function_shape=None
+    degree=3
+    gamma=0.001
+    kernel='rbf'
+    max_iter=-1
+    probability=False
+    random_state=None
+    shrinking=True
+    tol=0.001
+    verbose=False
+
+Even though I worked in this tunning there was another algorithm which gime the best estimators.
 
 ###### Question 5: What is validation, and what’s a classic mistake you can make if you do it wrong? How did you validate your analysis?  [relevant rubric items: “discuss validation”, “validation strategy”]
 
-Validation is the process to test the algorithm in another dataset which is disting of the training dataset. It is important to do this process to avoid a common methodological mistake which is learning the parameters of a prediction function and testing it on the same data. In this project I uses cross-validation strategy to create training and testing datasets. Scikit-learn has a collection of classes which can be used to generate lists of train/test indices for popular cross-validation strategies. In this project, the method uses is train_test_split.
+Validation is the process to test the algorithm in another dataset which is disting of the training dataset. It is important to do this process to avoid a common methodological mistake which is learning the parameters of a prediction function and testing it on the same data. In this project I uses cross-validation strategy to create training and testing datasets. Scikit-learn has a collection of classes which can be used to generate lists of train/test indices for popular cross-validation strategies. In this project, the method used was stratified shuffle split cross validation because of the small size of the dataset.
 
 ###### Question 6: Give at least 2 evaluation metrics and your average performance for each of them.  Explain an interpretation of your metrics that says something human-understandable about your algorithm’s performance. [relevant rubric item: “usage of evaluation metrics”]
 
-In my case, the values obtained for the algorithms are: precision (.90) and recall (.88) in avarage. This parameters means: "precision is a measure of result relevancy, while recall is a measure of how many truly relevant results are returned" (sklearn site). Here, "Precision and Recall are a useful measure of success of prediction when the classes are very imbalanced.(sklearn site).
+In my case, the values obtained for the algorithms were: 
 
-In our case, because precision says how exact you were among identify each class, the precision to identify NoPois was around 92% which means that 24(NoPois) of 26( 24 NoPois + 2 Pois) classes were correctly identify. In the cases of POIS the precision was 0. Meanwhile, Recall says, how complete you were among your identify each class. So, for NoPois was around 1, what means that every NoPois of the total of NoPois where identify. For Pois, was 0.
+    Accuracy: 0.84833   
+    Precision: 0.41964  
+    Recall: 0.35900 
+    F1: 0.38696 
+    F2: 0.36968
+    Total predictions: 15000    
+    True positives:  718    
+    False positives:  993   
+    False negatives: 1282   
+    True negatives: 12007
+
+ This parameters means: "precision is a measure of result relevancy, while recall is a measure of how many truly relevant results are returned" (sklearn site). Here, "Precision and Recall are a useful measure of success of prediction when the classes are very imbalanced.(sklearn site).
+
+In our case, because precision says how exact you were among identify each class, the precision to identify POIs is equal to: 
+
+    718 (true positives) / (718 (true positives) + 993 (false positives)) which is 0.4196.
+
+Meanwhile, recall says how complete you were among your identify each class. The result is:
+
+    718 (true positives) / (718 (true positives) + 1282 (false negatives)) which is 0.359 
